@@ -1,6 +1,5 @@
 import telebot
 
-SECRET_TOKEN = '6742420165:AAHeJnbcCGMNMbiM8wK2PaMIYk1UHFpdUbE'
 
 bot = telebot.TeleBot(SECRET_TOKEN)
 
