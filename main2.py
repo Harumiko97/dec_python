@@ -1,91 +1,114 @@
-import operator
-from functools import wraps
-import time
-from functools import lru_cache
+import logging
 
-# Task 1
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.CRITICAL)
 
+terminal_handler = logging.StreamHandler()
+file_handler = logging.FileHandler('log.txt')
 
-# Task 2
-def log_info(information):
-    @wraps(information)
-    def wrapped(*args, **kwargs):
-        print('log init value:', args[0])
-        res = information(*args, **kwargs)
-        print('log result:', res)
-        return res
-    return wrapped
+terminal_handler.setLevel(logging.DEBUG)
+file_handler.setLevel(logging.WARNING)
 
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+terminal_handler.setFormatter(formatter)
+file_handler.setFormatter(formatter)
 
-@log_info
-def function(a):
-    return a + 10
+logger.addHandler(terminal_handler)
+logger.addHandler(file_handler)
 
 
-print('Result:', function(10))
+class Discount:
+    def discount(self):
+        raise NotImplementedError
 
-# Task 3
 
-def timeit(func):
-    @wraps(func)
-    def timeit_wrapper(*args, **kwargs):
-        start_time = time.perf_counter()
-        res = func(*args, **kwargs)
-        end_time = time.perf_counter()
-        total_time = end_time - start_time
-        print(f'Function {func.__name__}{args}{kwargs} Took {total_time}')
-        return res
-    return timeit_wrapper
+class DiscountLimit(Exception):
+    def init(self, limit_discount, message='Invalid discount'):
+        self.limit_discount = limit_discount
+        self.message = message
+        super().__init__()
 
-@timeit
-def math(num):
-    total = sum((num for i in range(0, num ** 2)))
-    return total
+    def str(self):
+        return f'Limit of discount is {self.limit_discount}\n. {self.message}'
+
+
+class RegularDiscount(Discount):
+    def discount(self):
+        return 0.7
+
+
+class SilverDiscount(Discount):
+    def discount(self):
+        return 0.05
+
+
+class GoldDiscount(Discount):
+    def discount(self):
+        return 0.1
+
+
+class PlatinumDiscount(Discount):
+    def discount(self):
+        return 0.15
+
+
+class Product:
+    def __init__(self, name: str, price: float):
+        self.name = name
+        self.price = price
+
+    def __str__(self):
+        return f'{self.name} - {self.price}'
+
+
+class Customer:
+    def __init__(self, name: str, discount: Discount):
+        self.name = name
+        self.discount = discount
+
+
+class Order:
+    def __init__(self):
+        self.products = []
+        self.quantities = []
+
+    def add_product(self, product: Product, quantity: int):
+        self.products.append(product)
+        self.quantities.append(quantity)
+
+    def total_price(self, customer: Customer = None):
+        discount = customer.discount.discount() if customer else 0
+        total = 0
+        for product, quantity in zip(self.products, self.quantities):
+            total += product.price * quantity
+        return total * (1 - discount)
+
+    def __str__(self):
+        return '\n'.join(map(str, self.products))
+
+
+discounts = {
+    'regular': RegularDiscount(),
+    'silver': SilverDiscount(),
+    'gold': GoldDiscount(),
+    'platinum': PlatinumDiscount(),
+}
 
 if __name__ == '__main__':
-    math(10)
-    math(20)
-    math(30)
-
-
-# Task 4
-def rate_limits(max_calls, period):
-    def decorator(func):
-        calls = 0
-        last_reset = time.time()
-
-        def wrapper(*args, **kwargs):
-            nonlocal calls, last_reset
-            elapsed = time.time() - last_reset
-            if elapsed > period:
-                calls = 0
-                last_reset = time.time()
-            if calls >= max_calls:
-                raise Exception('Rate limit exceeded.')
-            calls += 1
-            return func(*args, **kwargs)
-        return wrapper
-    return decorator
-
-
-@rate_limits(max_calls=3, period=5)
-def api_call():
-    print('API call success.')
-    for _ in range(8):
+    print('Welcome to our shop!')
+    print('Available discounts:')
+    for discount in discounts:
         try:
-            api_call()
-        except Exception as e:
-            print(f'Error: {e}')
-            return api_call
+            discounts
+        except DiscountLimit:
+            raise DiscountLimit(0.4)
+    discount = input('Please choose discount: ')
+    customer = Customer('John', discounts[discount])
 
+    product1 = Product('banana', 100)
+    product2 = Product('apple', 200)
+    order = Order()
+    order.add_product(product1, 2)
+    order.add_product(product2, 1)
 
-# Task 5
-@lru_cache(maxsize=None)
-def fib(n):
-    if n < 2:
-        return n
-    return fib(n-1) + fib(n-2)
-
-
-print(([fib(n) for n in range(16)]))
-print(fib.cache_info())
+    print(order.total_price(customer))
