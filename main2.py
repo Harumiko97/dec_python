@@ -112,3 +112,4 @@ if __name__ == '__main__':
     order.add_product(product2, 1)
 
     print(order.total_price(customer))
+
