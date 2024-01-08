@@ -34,7 +34,7 @@ class DiscountLimit(Exception):
 
 class RegularDiscount(Discount):
     def discount(self):
-        return 0.7
+        return 0.2
 
 
 class SilverDiscount(Discount):
@@ -63,6 +63,8 @@ class Product:
 
 class Customer:
     def __init__(self, name: str, discount: Discount):
+        if discount.discount() > 0.4:
+            raise DiscountLimit(0.4)
         self.name = name
         self.discount = discount
 
@@ -98,10 +100,7 @@ if __name__ == '__main__':
     print('Welcome to our shop!')
     print('Available discounts:')
     for discount in discounts:
-        try:
-            discounts
-        except DiscountLimit:
-            raise DiscountLimit(0.4)
+        print(discount)
     discount = input('Please choose discount: ')
     customer = Customer('John', discounts[discount])
 
